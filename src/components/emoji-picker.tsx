@@ -843,10 +843,12 @@ const EmojiPickerListEmoji = memo(
     rowIndex: number;
   } & Pick<EmojiPickerListComponents, "Emoji">) => {
     const store = useEmojiPickerStore();
-    const isActive = useSelector(
-      store,
-      (state) => $activeEmoji(state)?.emoji === emoji.emoji,
-    );
+    const isActive = useSelector(store, (state) => {
+      const active = $activeEmoji(state);
+      if (!active) return false;
+      if (active.id !== undefined) return active.id === emoji.id;
+      return active.emoji === emoji.emoji;
+    });
 
     const handleSelect = useCallback(() => {
       store.get().onEmojiSelect(emoji);
