@@ -66,7 +66,8 @@ import { useStableCallback } from "../utils/use-stable-callback";
 function EmojiPickerDataHandler({
   emojiVersion,
   emojibaseUrl,
-}: Pick<EmojiPickerRootProps, "emojiVersion" | "emojibaseUrl">) {
+  custom,
+}: Pick<EmojiPickerRootProps, "emojiVersion" | "emojibaseUrl" | "custom">) {
   const [emojiData, setEmojiData] = useState<EmojiData | undefined>(undefined);
   const store = useEmojiPickerStore();
   const locale = useSelectorKey(store, "locale");
@@ -103,12 +104,12 @@ function EmojiPickerDataHandler({
         store
           .get()
           .onDataChange(
-            getEmojiPickerData(emojiData, columns, skinTone, search),
+            getEmojiPickerData(emojiData, columns, skinTone, search, custom),
           );
       },
       { timeout: 100 },
     );
-  }, [emojiData, columns, skinTone, search]);
+  }, [emojiData, columns, skinTone, search, custom]);
 
   return null;
 }
@@ -143,6 +144,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
       columns = 9,
       skinTone = "none",
       onEmojiSelect = noop,
+      custom,
       emojiVersion,
       emojibaseUrl,
       onFocusCapture,
@@ -472,6 +474,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
           <EmojiPickerDataHandler
             emojibaseUrl={emojibaseUrl}
             emojiVersion={emojiVersion}
+            custom={custom}
           />
           {children}
         </EmojiPickerStoreProvider>

@@ -1,4 +1,5 @@
 import type {
+  CustomCategory,
   Emoji,
   EmojiData,
   EmojiDataEmoji,
@@ -48,6 +49,7 @@ export function getEmojiPickerData(
   columns: number,
   skinTone: SkinTone | undefined,
   search: string,
+  custom?: CustomCategory[],
 ): EmojiPickerData {
   const emojis = searchEmojis(data.emojis, search);
   const rows: EmojiPickerDataRow[] = [];
@@ -98,8 +100,78 @@ export function getEmojiPickerData(
     startRowIndex += categoryRows.length;
   }
 
+  let customCount = 0;
+
+  if (custom) {
+    const searchText = search?.toLowerCase().trim();
+
+    for (const customCategory of custom) {
+      let filtered = customCategory.emojis;
+
+      if (searchText) {
+        const scores = new Map<string, number>();
+
+        filtered = filtered.filter((ce) => {
+          let score = 0;
+
+          if (ce.label.toLowerCase().includes(searchText)) {
+            score += 10;
+          }
+
+          if (ce.tags) {
+            for (const tag of ce.tags) {
+              if (tag.toLowerCase().includes(searchText)) {
+                score += 1;
+              }
+            }
+          }
+
+          if (score > 0) {
+            scores.set(ce.id, score);
+            return true;
+          }
+
+          return false;
+        });
+
+        filtered = filtered.sort(
+          (a, b) => (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0),
+        );
+      }
+
+      if (filtered.length === 0) {
+        continue;
+      }
+
+      const customEmojis: EmojiPickerEmoji[] = filtered.map((ce) => ({
+        label: ce.label,
+        url: ce.url,
+        id: ce.id,
+      }));
+
+      customCount += customEmojis.length;
+
+      const categoryRows = chunk(customEmojis, columns).map((emojis) => ({
+        categoryIndex,
+        emojis,
+      }));
+
+      rows.push(...categoryRows);
+      categories.push({
+        label: customCategory.label,
+        rowsCount: categoryRows.length,
+        startRowIndex,
+      });
+
+      categoriesStartRowIndices.push(startRowIndex);
+
+      categoryIndex++;
+      startRowIndex += categoryRows.length;
+    }
+  }
+
   return {
-    count: emojis.length,
+    count: emojis.length + customCount,
     categories,
     categoriesStartRowIndices,
     rows,
