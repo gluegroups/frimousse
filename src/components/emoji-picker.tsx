@@ -67,7 +67,11 @@ function EmojiPickerDataHandler({
   emojiVersion,
   emojibaseUrl,
   custom,
-}: Pick<EmojiPickerRootProps, "emojiVersion" | "emojibaseUrl" | "custom">) {
+  frequently,
+}: Pick<
+  EmojiPickerRootProps,
+  "emojiVersion" | "emojibaseUrl" | "custom" | "frequently"
+>) {
   const [emojiData, setEmojiData] = useState<EmojiData | undefined>(undefined);
   const store = useEmojiPickerStore();
   const locale = useSelectorKey(store, "locale");
@@ -104,12 +108,12 @@ function EmojiPickerDataHandler({
         store
           .get()
           .onDataChange(
-            getEmojiPickerData(emojiData, columns, skinTone, search, custom),
+            getEmojiPickerData(emojiData, columns, skinTone, search, custom, frequently),
           );
       },
       { timeout: 100 },
     );
-  }, [emojiData, columns, skinTone, search, custom]);
+  }, [emojiData, columns, skinTone, search, custom, frequently]);
 
   return null;
 }
@@ -145,6 +149,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
       skinTone = "none",
       onEmojiSelect = noop,
       custom,
+      frequently,
       emojiVersion,
       emojibaseUrl,
       onFocusCapture,
@@ -475,6 +480,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
             emojibaseUrl={emojibaseUrl}
             emojiVersion={emojiVersion}
             custom={custom}
+            frequently={frequently}
           />
           {children}
         </EmojiPickerStoreProvider>

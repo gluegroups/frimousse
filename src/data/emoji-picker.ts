@@ -50,6 +50,7 @@ export function getEmojiPickerData(
   skinTone: SkinTone | undefined,
   search: string,
   custom?: CustomCategory[],
+  frequently?: EmojiPickerEmoji[],
 ): EmojiPickerData {
   const emojis = searchEmojis(data.emojis, search);
   const rows: EmojiPickerDataRow[] = [];
@@ -58,6 +59,27 @@ export function getEmojiPickerData(
   const emojisByCategory: Record<number, EmojiPickerEmoji[]> = {};
   let categoryIndex = 0;
   let startRowIndex = 0;
+  let frequentlyCount = 0;
+
+  if (frequently && frequently.length > 0 && !search) {
+    const frequentlyRows = chunk(frequently, columns).map((emojis) => ({
+      categoryIndex,
+      emojis,
+    }));
+
+    rows.push(...frequentlyRows);
+    categories.push({
+      label: "Frequently Used",
+      rowsCount: frequentlyRows.length,
+      startRowIndex,
+    });
+
+    categoriesStartRowIndices.push(startRowIndex);
+    frequentlyCount = frequently.length;
+
+    categoryIndex++;
+    startRowIndex += frequentlyRows.length;
+  }
 
   for (const emoji of emojis) {
     if (!emojisByCategory[emoji.category]) {
@@ -171,7 +193,7 @@ export function getEmojiPickerData(
   }
 
   return {
-    count: emojis.length + customCount,
+    count: emojis.length + customCount + frequentlyCount,
     categories,
     categoriesStartRowIndices,
     rows,

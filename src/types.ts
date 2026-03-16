@@ -164,6 +164,12 @@ export interface EmojiPickerRootProps extends ComponentProps<"div"> {
   custom?: CustomCategory[];
 
   /**
+   * Frequently used emojis to display at the top of the picker.
+   * Supports both native emojis (with `emoji` field) and custom emojis (with `url` field).
+   */
+  frequently?: EmojiPickerEmoji[];
+
+  /**
    * A callback invoked when an emoji is selected.
    */
   onEmojiSelect?: (emoji: Emoji) => void;
