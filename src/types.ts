@@ -62,9 +62,24 @@ export type EmojiData = {
   skinTones: Record<Exclude<SkinTone, "none">, string>;
 };
 
-export type EmojiPickerEmoji = {
-  emoji: string;
+export type CustomEmoji = {
+  id: string;
   label: string;
+  url: string;
+  tags?: string[];
+};
+
+export type CustomCategory = {
+  id: string;
+  label: string;
+  emojis: CustomEmoji[];
+};
+
+export type EmojiPickerEmoji = {
+  emoji?: string;
+  label: string;
+  url?: string;
+  id?: string;
 };
 
 export type EmojiPickerCategory = {
@@ -143,6 +158,11 @@ export interface EmojiPickerListProps extends ComponentProps<"div"> {
 }
 
 export interface EmojiPickerRootProps extends ComponentProps<"div"> {
+  /**
+   * Custom emoji categories to append to the picker.
+   */
+  custom?: CustomCategory[];
+
   /**
    * A callback invoked when an emoji is selected.
    */
