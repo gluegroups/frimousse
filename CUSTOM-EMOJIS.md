@@ -97,3 +97,30 @@ The `emoji` object passed to `onEmojiSelect` differs for custom vs standard emoj
 | `id`    | `undefined`    | `"shipit"`   |
 
 Check for `emoji.url` to distinguish between the two.
+
+## Frequently Used Emojis
+
+Pass an array of `EmojiPickerEmoji` objects via the `frequently` prop to display a "Frequently Used" category at the top of the picker. Supports both native and custom emojis. The category is hidden during search.
+
+```tsx
+<EmojiPicker.Root
+  frequently={[
+    { emoji: "👍", label: "Thumbs Up" },
+    { emoji: "❤️", label: "Red Heart" },
+    { id: "shipit", label: "Ship It", url: "/emojis/shipit.png" },
+  ]}
+  onEmojiSelect={handleSelect}
+>
+  {/* ... */}
+</EmojiPicker.Root>
+```
+
+The consumer is responsible for tracking and persisting frequency data — the fork does not manage localStorage or usage counts internally.
+
+## Changes from Upstream
+
+| Version | Change | Files |
+| ------- | ------ | ----- |
+| 0.3.1   | Custom emoji support (`custom` prop) | `types.ts`, `emoji-picker.ts`, `emoji-picker.tsx` |
+| 0.3.2   | Fix `isActive` for custom emojis (compare by `id` instead of `emoji` string) | `emoji-picker.tsx` |
+| 0.3.3   | Frequently used emojis (`frequently` prop) | `types.ts`, `emoji-picker.ts`, `emoji-picker.tsx` |
