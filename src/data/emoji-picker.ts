@@ -51,6 +51,7 @@ export function getEmojiPickerData(
   search: string,
   custom?: CustomCategory[],
   frequently?: EmojiPickerEmoji[],
+  frequentlyLabel?: string,
 ): EmojiPickerData {
   const emojis = searchEmojis(data.emojis, search);
   const rows: EmojiPickerDataRow[] = [];
@@ -69,7 +70,7 @@ export function getEmojiPickerData(
 
     rows.push(...frequentlyRows);
     categories.push({
-      label: "Frequently Used",
+      label: frequentlyLabel ?? "Frequently Used",
       rowsCount: frequentlyRows.length,
       startRowIndex,
     });

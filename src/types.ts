@@ -170,6 +170,13 @@ export interface EmojiPickerRootProps extends ComponentProps<"div"> {
   frequently?: EmojiPickerEmoji[];
 
   /**
+   * The label for the frequently used category header.
+   *
+   * @default "Frequently Used"
+   */
+  frequentlyLabel?: string;
+
+  /**
    * A callback invoked when an emoji is selected.
    */
   onEmojiSelect?: (emoji: Emoji) => void;

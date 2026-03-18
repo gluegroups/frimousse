@@ -1,35 +1,14 @@
-# Custom Emoji Support — @gluegroups/frimousse
+# Custom Emoji Support
 
 ## Overview
 
-This fork adds a `custom` prop to `<EmojiPicker.Root>` that lets you inject image-based emoji categories into the picker. Custom categories appear after the standard Unicode emoji categories and are searchable by label and tags.
-
-## Types
-
-```typescript
-import type { CustomEmoji, CustomCategory } from "@gluegroups/frimousse";
-
-type CustomEmoji = {
-  id: string;
-  label: string;
-  url: string;
-  tags?: string[];
-};
-
-type CustomCategory = {
-  id: string;
-  label: string;
-  emojis: CustomEmoji[];
-};
-```
+The `custom` prop on `<EmojiPicker.Root>` lets you inject image-based emoji categories into the picker. Custom categories appear after the standard Unicode emoji categories and are searchable by label and tags. The `frequently` prop adds a "Frequently Used" category at the top of the picker, supporting both native and custom emojis.
 
 ## Usage
 
 Pass custom categories via the `custom` prop on `<EmojiPicker.Root>` and provide a custom `Emoji` component via `<EmojiPicker.List>` to render images:
 
 ```tsx
-import { EmojiPicker } from "@gluegroups/frimousse";
-
 const customCategories = [
   {
     id: "team",
@@ -109,18 +88,11 @@ Pass an array of `EmojiPickerEmoji` objects via the `frequently` prop to display
     { emoji: "❤️", label: "Red Heart" },
     { id: "shipit", label: "Ship It", url: "/emojis/shipit.png" },
   ]}
+  frequentlyLabel="Favorites"
   onEmojiSelect={handleSelect}
 >
   {/* ... */}
 </EmojiPicker.Root>
 ```
 
-The consumer is responsible for tracking and persisting frequency data — the fork does not manage localStorage or usage counts internally.
-
-## Changes from Upstream
-
-| Version | Change | Files |
-| ------- | ------ | ----- |
-| 0.3.1   | Custom emoji support (`custom` prop) | `types.ts`, `emoji-picker.ts`, `emoji-picker.tsx` |
-| 0.3.2   | Fix `isActive` for custom emojis (compare by `id` instead of `emoji` string) | `emoji-picker.tsx` |
-| 0.3.3   | Frequently used emojis (`frequently` prop) | `types.ts`, `emoji-picker.ts`, `emoji-picker.tsx` |
+The consumer is responsible for tracking and persisting frequency data — frimousse does not manage localStorage or usage counts internally.
