@@ -41,7 +41,7 @@ function MyEmojiPicker() {
             Emoji: ({ emoji, ...props }) => (
               <button {...props}>
                 {emoji.url ? (
-                  <img src={emoji.url} alt={emoji.label} width="1em" height="1em" />
+                  <img src={emoji.url} alt={emoji.label} style={{ width: "1em", height: "1em" }} />
                 ) : (
                   emoji.emoji
                 )}
