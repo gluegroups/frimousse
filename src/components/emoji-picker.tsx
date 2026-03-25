@@ -71,9 +71,10 @@ function EmojiPickerDataHandler({
   custom,
   frequently,
   frequentlyLabel,
+  searchLabel,
 }: Pick<
   EmojiPickerRootProps & CustomEmojiRootProps,
-  "emojiVersion" | "emojibaseUrl" | "custom" | "frequently" | "frequentlyLabel"
+  "emojiVersion" | "emojibaseUrl" | "custom" | "frequently" | "frequentlyLabel" | "searchLabel"
 >) {
   const [emojiData, setEmojiData] = useState<EmojiData | undefined>(undefined);
   const store = useEmojiPickerStore();
@@ -111,12 +112,12 @@ function EmojiPickerDataHandler({
         store
           .get()
           .onDataChange(
-            getEmojiPickerData(emojiData, columns, skinTone, search, custom, frequently, frequentlyLabel),
+            getEmojiPickerData(emojiData, columns, skinTone, search, custom, frequently, frequentlyLabel, searchLabel),
           );
       },
       { timeout: 100 },
     );
-  }, [emojiData, columns, skinTone, search, custom, frequently, frequentlyLabel]);
+  }, [emojiData, columns, skinTone, search, custom, frequently, frequentlyLabel, searchLabel]);
 
   return null;
 }
@@ -154,6 +155,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps & Custom
       custom,
       frequently,
       frequentlyLabel,
+      searchLabel,
       emojiVersion,
       emojibaseUrl,
       onFocusCapture,
@@ -486,6 +488,7 @@ const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps & Custom
             custom={custom}
             frequently={frequently}
             frequentlyLabel={frequentlyLabel}
+            searchLabel={searchLabel}
           />
           {children}
         </EmojiPickerStoreProvider>

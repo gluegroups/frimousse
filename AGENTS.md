@@ -11,7 +11,7 @@ New files added by this fork. Zero merge conflict surface area — upstream reba
 | File | Purpose |
 |---|---|
 | `src/custom-emoji-types.ts` | `CustomEmoji`, `CustomCategory`, `CustomEmojiRootProps`, `AugmentedEmojiPickerRootProps` |
-| `src/data/custom-emoji.ts` | `buildFrequentlyUsedRows()`, `buildCustomCategoryRows()`, `searchCustomEmojis()` |
+| `src/data/custom-emoji.ts` | `buildFrequentlyUsedRows()`, `buildCustomCategoryRows()`, `buildUnifiedSearchRows()`, `scoreEmoji()`, `searchCustomEmojis()` |
 | `src/utils/emoji-identity.ts` | `isSameEmoji()` — discriminated identity check for native vs. custom emojis |
 
 ## Upstream Touch Points
@@ -25,8 +25,9 @@ Minimal changes to upstream files. Each is a small, targeted insertion.
 
 ### `src/data/emoji-picker.ts`
 
-- `getEmojiPickerData()`: three new optional params (`custom`, `frequently`, `frequentlyLabel`)
-- Two delegation call sites added — one for frequently used rows (before the native emoji loop), one for custom category rows (after it). All logic lives in `custom-emoji.ts`.
+- `getEmojiPickerData()`: four new optional params (`custom`, `frequently`, `frequentlyLabel`, `searchLabel`)
+- When `search` is non-empty and both `custom` and `searchLabel` are provided, delegates immediately to `buildUnifiedSearchRows()` and early-returns a single flat category (unified ranking across native and custom emojis)
+- Otherwise: two delegation call sites — one for frequently used rows (before the native emoji loop), one for custom category rows (after it). All logic lives in `custom-emoji.ts`.
 
 ### `src/components/emoji-picker.tsx`
 
@@ -49,13 +50,13 @@ To strip the custom emoji feature entirely:
    - Restore `EmojiPickerEmoji` to `{ emoji: string; label: string }`
 
 3. **Revert `src/data/emoji-picker.ts`:**
-   - Remove the `custom`, `frequently`, `frequentlyLabel` params from `getEmojiPickerData()`
-   - Remove the two delegation call sites and their imports
+   - Remove the `custom`, `frequently`, `frequentlyLabel`, `searchLabel` params from `getEmojiPickerData()`
+   - Remove the unified search early-return branch and the two delegation call sites, and their imports
 
 4. **Revert `src/components/emoji-picker.tsx`:**
    - Remove `CustomEmojiRootProps` import and type intersections; restore `EmojiPickerRootProps` alone
    - Remove `isSameEmoji` import; restore `isActive` to `$activeEmoji(state)?.emoji === emoji.emoji`
-   - Remove destructuring and forwarding of `custom`, `frequently`, `frequentlyLabel`
+   - Remove destructuring and forwarding of `custom`, `frequently`, `frequentlyLabel`, `searchLabel`
 
 5. **Revert `src/index.ts`:**
    - Remove `CustomEmoji`, `CustomCategory` exports

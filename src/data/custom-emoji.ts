@@ -1,8 +1,10 @@
 import type { CustomCategory } from "../custom-emoji-types";
 import type {
+  EmojiDataEmoji,
   EmojiPickerDataCategory,
   EmojiPickerDataRow,
   EmojiPickerEmoji,
+  SkinTone,
 } from "../types";
 import { chunk } from "../utils/chunk";
 
@@ -42,7 +44,23 @@ export function buildFrequentlyUsedRows(
 }
 
 // Mirrors the scoring algorithm in the upstream searchEmojis() (src/data/emoji-picker.ts).
-// If that function's scoring logic changes, update this one to match.
+// If that function's scoring logic changes, update scoreEmoji() to match.
+function scoreEmoji(label: string, tags: string[], searchText: string): number {
+  let score = 0;
+
+  if (label.toLowerCase().includes(searchText)) {
+    score += 10;
+  }
+
+  for (const tag of tags) {
+    if (tag.toLowerCase().includes(searchText)) {
+      score += 1;
+    }
+  }
+
+  return score;
+}
+
 function searchCustomEmojis(
   emojis: CustomCategory["emojis"],
   searchText: string,
@@ -50,19 +68,7 @@ function searchCustomEmojis(
   const scores = new Map<string, number>();
 
   const filtered = emojis.filter((ce) => {
-    let score = 0;
-
-    if (ce.label.toLowerCase().includes(searchText)) {
-      score += 10;
-    }
-
-    if (ce.tags) {
-      for (const tag of ce.tags) {
-        if (tag.toLowerCase().includes(searchText)) {
-          score += 1;
-        }
-      }
-    }
+    const score = scoreEmoji(ce.label, ce.tags ?? [], searchText);
 
     if (score > 0) {
       scores.set(ce.id, score);
@@ -125,4 +131,68 @@ export function buildCustomCategoryRows(
   }
 
   return { rows, categories, count };
+}
+
+export function buildUnifiedSearchRows(
+  nativeEmojis: EmojiDataEmoji[],
+  custom: CustomCategory[],
+  search: string,
+  columns: number,
+  categoryIndex: number,
+  startRowIndex: number,
+  skinTone: SkinTone | undefined,
+  searchLabel: string,
+): BuiltRows {
+  const searchText = search.toLowerCase().trim();
+
+  type ScoredEmoji = { emoji: EmojiPickerEmoji; score: number };
+  const scored: ScoredEmoji[] = [];
+
+  for (const e of nativeEmojis) {
+    const score = scoreEmoji(e.label, e.tags, searchText);
+
+    if (score > 0) {
+      scored.push({
+        emoji: {
+          emoji:
+            skinTone && skinTone !== "none" && e.skins
+              ? e.skins[skinTone]
+              : e.emoji,
+          label: e.label,
+        },
+        score,
+      });
+    }
+  }
+
+  for (const customCategory of custom) {
+    for (const ce of customCategory.emojis) {
+      const score = scoreEmoji(ce.label, ce.tags ?? [], searchText);
+
+      if (score > 0) {
+        scored.push({
+          emoji: { label: ce.label, url: ce.url, id: ce.id },
+          score,
+        });
+      }
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score);
+
+  const emojis = scored.map((s) => s.emoji);
+  const rows = chunk(emojis, columns).map((emojis) => ({
+    categoryIndex,
+    emojis,
+  }));
+
+  return {
+    rows,
+    category: {
+      label: searchLabel,
+      rowsCount: rows.length,
+      startRowIndex,
+    },
+    count: emojis.length,
+  };
 }

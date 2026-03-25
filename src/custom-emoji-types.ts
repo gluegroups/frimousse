@@ -35,6 +35,16 @@ export interface CustomEmojiRootProps {
    * @default "Frequently Used"
    */
   frequentlyLabel?: string;
+
+  /**
+   * When provided, search results from both native and custom emojis are
+   * merged into a single flat category sorted by relevance, using this
+   * string as the category header label.
+   *
+   * When omitted, search results are displayed within their original
+   * categories (default upstream behaviour).
+   */
+  searchLabel?: string;
 }
 
 /**

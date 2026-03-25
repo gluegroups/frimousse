@@ -1,5 +1,5 @@
 import type { CustomCategory } from "../custom-emoji-types";
-import { buildCustomCategoryRows, buildFrequentlyUsedRows } from "./custom-emoji";
+import { buildCustomCategoryRows, buildFrequentlyUsedRows, buildUnifiedSearchRows } from "./custom-emoji";
 import type {
   Emoji,
   EmojiData,
@@ -53,7 +53,19 @@ export function getEmojiPickerData(
   custom?: CustomCategory[],
   frequently?: EmojiPickerEmoji[],
   frequentlyLabel?: string,
+  searchLabel?: string,
 ): EmojiPickerData {
+  if (search && searchLabel && custom) {
+    const built = buildUnifiedSearchRows(data.emojis, custom, search, columns, 0, 0, skinTone, searchLabel);
+    return {
+      count: built.count,
+      categories: [built.category],
+      categoriesStartRowIndices: [0],
+      rows: built.rows,
+      skinTones: data.skinTones,
+    };
+  }
+
   const emojis = searchEmojis(data.emojis, search);
   const rows: EmojiPickerDataRow[] = [];
   const categories: EmojiPickerDataCategory[] = [];
