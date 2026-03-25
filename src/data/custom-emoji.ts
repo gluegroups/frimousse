@@ -45,7 +45,7 @@ export function buildFrequentlyUsedRows(
 
 // Mirrors the scoring algorithm in the upstream searchEmojis() (src/data/emoji-picker.ts).
 // If that function's scoring logic changes, update scoreEmoji() to match.
-function scoreEmoji(label: string, tags: string[], searchText: string): number {
+export function scoreEmoji(label: string, tags: string[], searchText: string): number {
   let score = 0;
 
   if (label.toLowerCase().includes(searchText)) {
