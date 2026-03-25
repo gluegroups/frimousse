@@ -53,10 +53,11 @@ export function getEmojiPickerData(
   custom?: CustomCategory[],
   frequently?: EmojiPickerEmoji[],
   frequentlyLabel?: string,
+  unifiedSearch?: boolean,
   searchLabel?: string,
 ): EmojiPickerData {
-  if (search && searchLabel && custom) {
-    const built = buildUnifiedSearchRows(data.emojis, custom, search, columns, 0, 0, skinTone, searchLabel);
+  if (search && unifiedSearch && custom) {
+    const built = buildUnifiedSearchRows(data.emojis, custom, search, columns, 0, 0, skinTone, searchLabel ?? "");
     return {
       count: built.count,
       categories: [built.category],

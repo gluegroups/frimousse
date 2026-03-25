@@ -37,12 +37,19 @@ export interface CustomEmojiRootProps {
   frequentlyLabel?: string;
 
   /**
-   * When provided, search results from both native and custom emojis are
-   * merged into a single flat category sorted by relevance, using this
-   * string as the category header label.
+   * When true, search results from both native and custom emojis are merged
+   * into a single flat category sorted by relevance, instead of being
+   * displayed within their original categories.
    *
-   * When omitted, search results are displayed within their original
-   * categories (default upstream behaviour).
+   * @default false
+   */
+  unifiedSearch?: boolean;
+
+  /**
+   * The label for the unified search results category header.
+   * Only used when `unifiedSearch` is true.
+   *
+   * @default ""
    */
   searchLabel?: string;
 }

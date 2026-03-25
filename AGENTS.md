@@ -25,8 +25,8 @@ Minimal changes to upstream files. Each is a small, targeted insertion.
 
 ### `src/data/emoji-picker.ts`
 
-- `getEmojiPickerData()`: four new optional params (`custom`, `frequently`, `frequentlyLabel`, `searchLabel`)
-- When `search` is non-empty and both `custom` and `searchLabel` are provided, delegates immediately to `buildUnifiedSearchRows()` and early-returns a single flat category (unified ranking across native and custom emojis)
+- `getEmojiPickerData()`: five new optional params (`custom`, `frequently`, `frequentlyLabel`, `unifiedSearch`, `searchLabel`)
+- When `search` is non-empty and both `custom` and `unifiedSearch` are truthy, delegates immediately to `buildUnifiedSearchRows()` and early-returns a single flat category (unified ranking across native and custom emojis); `searchLabel` sets the category header (defaults to `""`)
 - Otherwise: two delegation call sites — one for frequently used rows (before the native emoji loop), one for custom category rows (after it). All logic lives in `custom-emoji.ts`.
 
 ### `src/components/emoji-picker.tsx`
@@ -50,13 +50,13 @@ To strip the custom emoji feature entirely:
    - Restore `EmojiPickerEmoji` to `{ emoji: string; label: string }`
 
 3. **Revert `src/data/emoji-picker.ts`:**
-   - Remove the `custom`, `frequently`, `frequentlyLabel`, `searchLabel` params from `getEmojiPickerData()`
+   - Remove the `custom`, `frequently`, `frequentlyLabel`, `unifiedSearch`, `searchLabel` params from `getEmojiPickerData()`
    - Remove the unified search early-return branch and the two delegation call sites, and their imports
 
 4. **Revert `src/components/emoji-picker.tsx`:**
    - Remove `CustomEmojiRootProps` import and type intersections; restore `EmojiPickerRootProps` alone
    - Remove `isSameEmoji` import; restore `isActive` to `$activeEmoji(state)?.emoji === emoji.emoji`
-   - Remove destructuring and forwarding of `custom`, `frequently`, `frequentlyLabel`, `searchLabel`
+   - Remove destructuring and forwarding of `custom`, `frequently`, `frequentlyLabel`, `unifiedSearch`, `searchLabel`
 
 5. **Revert `src/index.ts`:**
    - Remove `CustomEmoji`, `CustomCategory` exports
