@@ -62,18 +62,7 @@ export type EmojiData = {
   skinTones: Record<Exclude<SkinTone, "none">, string>;
 };
 
-export type CustomEmoji = {
-  id: string;
-  label: string;
-  url: string;
-  tags?: string[];
-};
-
-export type CustomCategory = {
-  id: string;
-  label: string;
-  emojis: CustomEmoji[];
-};
+export type { CustomEmoji, CustomCategory } from "./custom-emoji-types";
 
 export type EmojiPickerEmoji = {
   emoji?: string;
@@ -158,24 +147,6 @@ export interface EmojiPickerListProps extends ComponentProps<"div"> {
 }
 
 export interface EmojiPickerRootProps extends ComponentProps<"div"> {
-  /**
-   * Custom emoji categories to append to the picker.
-   */
-  custom?: CustomCategory[];
-
-  /**
-   * Frequently used emojis to display at the top of the picker.
-   * Supports both native emojis (with `emoji` field) and custom emojis (with `url` field).
-   */
-  frequently?: EmojiPickerEmoji[];
-
-  /**
-   * The label for the frequently used category header.
-   *
-   * @default "Frequently Used"
-   */
-  frequentlyLabel?: string;
-
   /**
    * A callback invoked when an emoji is selected.
    */

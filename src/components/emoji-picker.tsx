@@ -18,6 +18,7 @@ import {
   useState,
 } from "react";
 import { EMOJI_FONT_FAMILY } from "../constants";
+import type { CustomEmojiRootProps } from "../custom-emoji-types";
 import { getEmojiData, validateLocale, validateSkinTone } from "../data/emoji";
 import { getEmojiPickerData } from "../data/emoji-picker";
 import { useActiveEmoji, useSkinTone } from "../hooks";
@@ -57,6 +58,7 @@ import type {
   WithAttributes,
 } from "../types";
 import { shallow } from "../utils/compare";
+import { isSameEmoji } from "../utils/emoji-identity";
 import { noop } from "../utils/noop";
 import { requestIdleCallback } from "../utils/request-idle-callback";
 import { useCreateStore, useSelector, useSelectorKey } from "../utils/store";
@@ -70,7 +72,7 @@ function EmojiPickerDataHandler({
   frequently,
   frequentlyLabel,
 }: Pick<
-  EmojiPickerRootProps,
+  EmojiPickerRootProps & CustomEmojiRootProps,
   "emojiVersion" | "emojibaseUrl" | "custom" | "frequently" | "frequentlyLabel"
 >) {
   const [emojiData, setEmojiData] = useState<EmojiData | undefined>(undefined);
@@ -142,7 +144,7 @@ function EmojiPickerDataHandler({
  * </EmojiPicker.Root>
  * ```
  */
-const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps>(
+const EmojiPickerRoot = forwardRef<HTMLDivElement, EmojiPickerRootProps & CustomEmojiRootProps>(
   (
     {
       locale = "en",
@@ -852,12 +854,9 @@ const EmojiPickerListEmoji = memo(
     rowIndex: number;
   } & Pick<EmojiPickerListComponents, "Emoji">) => {
     const store = useEmojiPickerStore();
-    const isActive = useSelector(store, (state) => {
-      const active = $activeEmoji(state);
-      if (!active) return false;
-      if (active.id !== undefined) return active.id === emoji.id;
-      return active.emoji === emoji.emoji;
-    });
+    const isActive = useSelector(store, (state) =>
+      isSameEmoji($activeEmoji(state), emoji),
+    );
 
     const handleSelect = useCallback(() => {
       store.get().onEmojiSelect(emoji);

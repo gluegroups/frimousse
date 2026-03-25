@@ -1,5 +1,6 @@
+import type { CustomCategory } from "../custom-emoji-types";
+import { buildCustomCategoryRows, buildFrequentlyUsedRows } from "./custom-emoji";
 import type {
-  CustomCategory,
   Emoji,
   EmojiData,
   EmojiDataEmoji,
@@ -63,23 +64,13 @@ export function getEmojiPickerData(
   let frequentlyCount = 0;
 
   if (frequently && frequently.length > 0 && !search) {
-    const frequentlyRows = chunk(frequently, columns).map((emojis) => ({
-      categoryIndex,
-      emojis,
-    }));
-
-    rows.push(...frequentlyRows);
-    categories.push({
-      label: frequentlyLabel ?? "Frequently Used",
-      rowsCount: frequentlyRows.length,
-      startRowIndex,
-    });
-
+    const built = buildFrequentlyUsedRows(frequently, columns, categoryIndex, startRowIndex, frequentlyLabel);
+    rows.push(...built.rows);
+    categories.push(built.category);
     categoriesStartRowIndices.push(startRowIndex);
-    frequentlyCount = frequently.length;
-
+    frequentlyCount = built.count;
     categoryIndex++;
-    startRowIndex += frequentlyRows.length;
+    startRowIndex += built.rows.length;
   }
 
   for (const emoji of emojis) {
@@ -126,71 +117,13 @@ export function getEmojiPickerData(
   let customCount = 0;
 
   if (custom) {
-    const searchText = search?.toLowerCase().trim();
-
-    for (const customCategory of custom) {
-      let filtered = customCategory.emojis;
-
-      if (searchText) {
-        const scores = new Map<string, number>();
-
-        filtered = filtered.filter((ce) => {
-          let score = 0;
-
-          if (ce.label.toLowerCase().includes(searchText)) {
-            score += 10;
-          }
-
-          if (ce.tags) {
-            for (const tag of ce.tags) {
-              if (tag.toLowerCase().includes(searchText)) {
-                score += 1;
-              }
-            }
-          }
-
-          if (score > 0) {
-            scores.set(ce.id, score);
-            return true;
-          }
-
-          return false;
-        });
-
-        filtered = filtered.sort(
-          (a, b) => (scores.get(b.id) ?? 0) - (scores.get(a.id) ?? 0),
-        );
-      }
-
-      if (filtered.length === 0) {
-        continue;
-      }
-
-      const customEmojis: EmojiPickerEmoji[] = filtered.map((ce) => ({
-        label: ce.label,
-        url: ce.url,
-        id: ce.id,
-      }));
-
-      customCount += customEmojis.length;
-
-      const categoryRows = chunk(customEmojis, columns).map((emojis) => ({
-        categoryIndex,
-        emojis,
-      }));
-
-      rows.push(...categoryRows);
-      categories.push({
-        label: customCategory.label,
-        rowsCount: categoryRows.length,
-        startRowIndex,
-      });
-
-      categoriesStartRowIndices.push(startRowIndex);
-
-      categoryIndex++;
-      startRowIndex += categoryRows.length;
+    const built = buildCustomCategoryRows(custom, search, columns, categoryIndex, startRowIndex);
+    rows.push(...built.rows);
+    categories.push(...built.categories);
+    for (const cat of built.categories) {
+      categoriesStartRowIndices.push(cat.startRowIndex);
     }
+    customCount = built.count;
   }
 
   return {
