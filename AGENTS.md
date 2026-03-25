@@ -4,43 +4,64 @@
 
 Add **custom emoji support** to frimousse so glue-web can inject custom emoji categories (image-based) into the picker. Changes should be minimal and additive to keep rebasing on upstream easy.
 
-## Modifications (3 files)
+## Our Files
 
-### 1. `src/types.ts` — Add custom emoji types
+New files added by this fork. Zero merge conflict surface area — upstream rebase never touches these.
 
-```typescript
-export type CustomEmoji = {
-  id: string;
-  label: string;
-  url: string;
-  tags?: string[];
-};
+| File | Purpose |
+|---|---|
+| `src/custom-emoji-types.ts` | `CustomEmoji`, `CustomCategory`, `CustomEmojiRootProps`, `AugmentedEmojiPickerRootProps` |
+| `src/data/custom-emoji.ts` | `buildFrequentlyUsedRows()`, `buildCustomCategoryRows()`, `searchCustomEmojis()` |
+| `src/utils/emoji-identity.ts` | `isSameEmoji()` — discriminated identity check for native vs. custom emojis |
 
-export type CustomCategory = {
-  id: string;
-  label: string;
-  emojis: CustomEmoji[];
-};
-```
+## Upstream Touch Points
 
-- Add `custom?: CustomCategory[]`, `frequently?: EmojiPickerEmoji[]`, and `frequentlyLabel?: string` to `EmojiPickerRootProps`
-- Extend `EmojiPickerEmoji` with optional `url` and `id` fields for custom emojis (`emoji` is optional)
+Minimal changes to upstream files. Each is a small, targeted insertion.
 
-### 2. `src/data/emoji-picker.ts` — Merge custom categories into data pipeline
+### `src/types.ts`
 
-- Add `custom`, `frequently`, and `frequentlyLabel` parameters to `getEmojiPickerData()`
-- When `frequently` is provided and search is empty, prepend a "Frequently Used" category (label configurable via `frequentlyLabel`)
-- When `search` is non-empty, filter custom emojis by `label` and `tags` using the same scoring approach as `searchEmojis()`
-- After building standard category rows, append custom category rows using the same `chunk()` utility
-- Ensure custom categories appear in `categories[]` and `rows[]` with correct `startRowIndex` offsets
+- `EmojiPickerEmoji`: widened with `emoji?`, `url?`, `id?` to accommodate custom emojis flowing through the upstream data pipeline (required because `$activeEmoji` in `store.ts` returns this type and cannot be modified)
+- Re-exports `CustomEmoji` and `CustomCategory` from `custom-emoji-types.ts`
 
-### 3. `src/components/emoji-picker.tsx` — Wire the props through
+### `src/data/emoji-picker.ts`
 
-- `EmojiPickerRoot`: Destructure `custom`, `frequently`, `frequentlyLabel` from props, forward to `EmojiPickerDataHandler`
-- `EmojiPickerDataHandler`: Pass all three to `getEmojiPickerData()`
-- `EmojiPickerListEmoji`: Compare active emoji by `id` for custom emojis, fall back to `emoji` string for native emojis
+- `getEmojiPickerData()`: three new optional params (`custom`, `frequently`, `frequentlyLabel`)
+- Two delegation call sites added — one for frequently used rows (before the native emoji loop), one for custom category rows (after it). All logic lives in `custom-emoji.ts`.
 
-### Note: Image rendering is handled by the consumer
+### `src/components/emoji-picker.tsx`
+
+- `EmojiPickerRoot` and `EmojiPickerDataHandler`: prop type changed to `EmojiPickerRootProps & CustomEmojiRootProps`; props forwarded to `getEmojiPickerData()`
+- `EmojiPickerListEmoji`: `isActive` selector replaced with `isSameEmoji()` call
+
+### `src/index.ts`
+
+- `CustomEmoji`, `CustomCategory` added to exports
+- `EmojiPickerRootProps` re-exported as `AugmentedEmojiPickerRootProps` (the merged type), shadowing the upstream export so consumers see the full prop surface
+
+## Removing This Feature
+
+To strip the custom emoji feature entirely:
+
+1. **Delete** `src/custom-emoji-types.ts`, `src/data/custom-emoji.ts`, `src/utils/emoji-identity.ts`
+
+2. **Revert `src/types.ts`:**
+   - Remove the re-exports of `CustomEmoji` and `CustomCategory`
+   - Restore `EmojiPickerEmoji` to `{ emoji: string; label: string }`
+
+3. **Revert `src/data/emoji-picker.ts`:**
+   - Remove the `custom`, `frequently`, `frequentlyLabel` params from `getEmojiPickerData()`
+   - Remove the two delegation call sites and their imports
+
+4. **Revert `src/components/emoji-picker.tsx`:**
+   - Remove `CustomEmojiRootProps` import and type intersections; restore `EmojiPickerRootProps` alone
+   - Remove `isSameEmoji` import; restore `isActive` to `$activeEmoji(state)?.emoji === emoji.emoji`
+   - Remove destructuring and forwarding of `custom`, `frequently`, `frequentlyLabel`
+
+5. **Revert `src/index.ts`:**
+   - Remove `CustomEmoji`, `CustomCategory` exports
+   - Restore `EmojiPickerRootProps` to export directly from `./types`
+
+## Note: Image Rendering
 
 The `DefaultEmojiPickerListEmoji` is **not** modified. Consumers render custom emoji images via the existing `components` prop on `<EmojiPicker.List>`:
 
