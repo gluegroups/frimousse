@@ -41,6 +41,8 @@ export function buildFrequentlyUsedRows(
   };
 }
 
+// Mirrors the scoring algorithm in the upstream searchEmojis() (src/data/emoji-picker.ts).
+// If that function's scoring logic changes, update this one to match.
 function searchCustomEmojis(
   emojis: CustomCategory["emojis"],
   searchText: string,
