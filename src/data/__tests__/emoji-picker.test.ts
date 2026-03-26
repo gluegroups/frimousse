@@ -297,4 +297,105 @@ describe("getEmojiPickerData", () => {
     expect(result.rows).toEqual([]);
     expect(result.categoriesStartRowIndices).toEqual([]);
   });
+
+  it("should append custom categories after native categories", () => {
+    const custom = [
+      {
+        id: "brand",
+        label: "Brand",
+        emojis: [
+          { id: "glue-logo", label: "Glue logo", url: "/glue.png" },
+        ],
+      },
+    ];
+    const result = getEmojiPickerData(data, 10, undefined, "", custom);
+    const labels = result.categories.map((c) => c.label);
+
+    expect(result.count).toBe(data.emojis.length + 1);
+    expect(labels.at(-1)).toBe("Brand");
+  });
+
+  it("should filter custom categories during search", () => {
+    const custom = [
+      {
+        id: "brand",
+        label: "Brand",
+        emojis: [
+          { id: "glue-logo", label: "Glue logo", url: "/glue.png", tags: ["glue"] },
+        ],
+      },
+    ];
+    const result = getEmojiPickerData(data, 10, undefined, "glue", custom);
+
+    expect(result.count).toBe(1);
+    expect(result.categories[0]?.label).toBe("Brand");
+  });
+
+  it("should prepend frequently used emojis when search is empty", () => {
+    const frequently = [
+      { emoji: "😀", label: "grinning face" },
+      { id: "glue-logo", label: "Glue logo", url: "/glue.png" },
+    ];
+    const result = getEmojiPickerData(data, 10, undefined, "", undefined, frequently);
+
+    expect(result.categories[0]?.label).toBe("Frequently Used");
+    expect(result.count).toBe(data.emojis.length + 2);
+  });
+
+  it("should use a custom frequentlyLabel when provided", () => {
+    const frequently = [{ emoji: "😀", label: "grinning face" }];
+    const result = getEmojiPickerData(data, 10, undefined, "", undefined, frequently, "Recent");
+
+    expect(result.categories[0]?.label).toBe("Recent");
+  });
+
+  it("should hide frequently used emojis during search", () => {
+    const frequently = [{ emoji: "😀", label: "grinning face" }];
+    const result = getEmojiPickerData(data, 10, undefined, "broccoli", undefined, frequently);
+
+    expect(result.categories.every((c) => c.label !== "Frequently Used")).toBe(true);
+  });
+
+  it("should return a single unified category when unifiedSearch is true", () => {
+    const custom = [
+      {
+        id: "brand",
+        label: "Brand",
+        emojis: [
+          { id: "glue-logo", label: "Glue logo", url: "/glue.png", tags: ["glue"] },
+        ],
+      },
+    ];
+    const result = getEmojiPickerData(data, 10, undefined, "broccoli", custom, undefined, undefined, true, "Results");
+
+    expect(result.categories).toHaveLength(1);
+    expect(result.categories[0]?.label).toBe("Results");
+  });
+
+  it("should use an empty string for the unified category label when searchLabel is omitted", () => {
+    const custom = [
+      {
+        id: "brand",
+        label: "Brand",
+        emojis: [{ id: "glue-logo", label: "Glue logo", url: "/glue.png" }],
+      },
+    ];
+    const result = getEmojiPickerData(data, 10, undefined, "broccoli", custom, undefined, undefined, true);
+
+    expect(result.categories[0]?.label).toBe("");
+  });
+
+  it("should not activate unified search when unifiedSearch is false", () => {
+    const custom = [
+      {
+        id: "brand",
+        label: "Brand",
+        emojis: [{ id: "glue-logo", label: "Glue logo", url: "/glue.png" }],
+      },
+    ];
+    const result = getEmojiPickerData(data, 10, undefined, "broccoli", custom, undefined, undefined, false);
+
+    // Falls through to default path — results are in their original category
+    expect(result.categories[0]?.label).toBe("Food & drink");
+  });
 });

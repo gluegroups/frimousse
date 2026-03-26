@@ -1,0 +1,249 @@
+import { describe, expect, it } from "vitest";
+import type { CustomCategory } from "../../custom-emoji-types";
+import type { EmojiDataEmoji } from "../../types";
+import {
+  buildCustomCategoryRows,
+  buildFrequentlyUsedRows,
+  buildUnifiedSearchRows,
+  scoreEmoji,
+} from "../custom-emoji";
+
+// --- scoreEmoji ---
+
+describe("scoreEmoji", () => {
+  it("should return 0 when there is no match", () => {
+    expect(scoreEmoji("grinning face", ["happy", "smile"], "cat")).toBe(0);
+  });
+
+  it("should score a label match as 10", () => {
+    expect(scoreEmoji("grinning face", [], "grinning")).toBe(10);
+  });
+
+  it("should score each matching tag as 1", () => {
+    expect(scoreEmoji("face", ["happy", "smile", "happy-go-lucky"], "happy")).toBe(2);
+  });
+
+  it("should combine label and tag scores", () => {
+    expect(scoreEmoji("happy face", ["happy", "smile"], "happy")).toBe(11);
+  });
+
+  it("should be case-insensitive", () => {
+    expect(scoreEmoji("Grinning Face", ["Happy"], "grinning")).toBe(10);
+    expect(scoreEmoji("face", ["SMILE"], "smile")).toBe(1);
+  });
+});
+
+// --- shared fixtures ---
+
+const customCategories: CustomCategory[] = [
+  {
+    id: "brand",
+    label: "Brand",
+    emojis: [
+      { id: "glue-logo", label: "Glue logo", url: "/glue.png", tags: ["glue", "brand"] },
+      { id: "glue-icon", label: "Glue icon", url: "/icon.png", tags: ["glue", "icon"] },
+    ],
+  },
+  {
+    id: "reactions",
+    label: "Reactions",
+    emojis: [
+      { id: "thumbs-up", label: "Thumbs up", url: "/thumbs-up.png", tags: ["approve", "yes"] },
+      { id: "fire", label: "Fire", url: "/fire.png", tags: ["hot", "lit"] },
+    ],
+  },
+];
+
+// --- buildFrequentlyUsedRows ---
+
+describe("buildFrequentlyUsedRows", () => {
+  const frequently = [
+    { emoji: "😀", label: "grinning face" },
+    { id: "glue-logo", label: "Glue logo", url: "/glue.png" },
+  ];
+
+  it("should build rows chunked by columns", () => {
+    const result = buildFrequentlyUsedRows(frequently, 1, 0, 0, undefined);
+
+    expect(result.rows).toHaveLength(2);
+    expect(result.rows[0]?.emojis).toHaveLength(1);
+    expect(result.count).toBe(2);
+  });
+
+  it("should use the provided label", () => {
+    const result = buildFrequentlyUsedRows(frequently, 10, 0, 0, "Recently Used");
+
+    expect(result.category.label).toBe("Recently Used");
+  });
+
+  it("should default the label to 'Frequently Used'", () => {
+    const result = buildFrequentlyUsedRows(frequently, 10, 0, 0, undefined);
+
+    expect(result.category.label).toBe("Frequently Used");
+  });
+
+  it("should set correct startRowIndex and rowsCount on the category", () => {
+    const result = buildFrequentlyUsedRows(frequently, 1, 2, 5, undefined);
+
+    expect(result.category.startRowIndex).toBe(5);
+    expect(result.category.rowsCount).toBe(2);
+  });
+});
+
+// --- buildCustomCategoryRows ---
+
+describe("buildCustomCategoryRows", () => {
+  it("should include all emojis when search is empty", () => {
+    const result = buildCustomCategoryRows(customCategories, "", 10, 0, 0);
+
+    expect(result.count).toBe(4);
+    expect(result.categories).toHaveLength(2);
+    expect(result.categories[0]?.label).toBe("Brand");
+    expect(result.categories[1]?.label).toBe("Reactions");
+  });
+
+  it("should filter emojis by label during search", () => {
+    const result = buildCustomCategoryRows(customCategories, "fire", 10, 0, 0);
+
+    expect(result.count).toBe(1);
+    expect(result.categories).toHaveLength(1);
+    expect(result.categories[0]?.label).toBe("Reactions");
+    expect(result.rows[0]?.emojis[0]?.id).toBe("fire");
+  });
+
+  it("should filter emojis by tags during search", () => {
+    const result = buildCustomCategoryRows(customCategories, "glue", 10, 0, 0);
+
+    expect(result.count).toBe(2);
+    expect(result.categories).toHaveLength(1);
+    expect(result.categories[0]?.label).toBe("Brand");
+  });
+
+  it("should skip categories with no matching emojis", () => {
+    const result = buildCustomCategoryRows(customCategories, "fire", 10, 0, 0);
+
+    expect(result.categories.every((c) => c.label !== "Brand")).toBe(true);
+  });
+
+  it("should rank results by score within each category", () => {
+    const categories: CustomCategory[] = [
+      {
+        id: "test",
+        label: "Test",
+        emojis: [
+          { id: "a", label: "glue thing", url: "/a.png", tags: [] },
+          { id: "b", label: "thing", url: "/b.png", tags: ["glue"] },
+        ],
+      },
+    ];
+    const result = buildCustomCategoryRows(categories, "glue", 10, 0, 0);
+    const emojis = result.rows.flatMap((r) => r.emojis);
+
+    expect(emojis[0]?.id).toBe("a"); // label match scores higher
+    expect(emojis[1]?.id).toBe("b");
+  });
+
+  it("should return empty results when nothing matches", () => {
+    const result = buildCustomCategoryRows(customCategories, "zzznomatch", 10, 0, 0);
+
+    expect(result.count).toBe(0);
+    expect(result.categories).toHaveLength(0);
+    expect(result.rows).toHaveLength(0);
+  });
+
+  it("should set correct startRowIndex offsets across categories", () => {
+    const result = buildCustomCategoryRows(customCategories, "", 10, 0, 0);
+
+    expect(result.categories[0]?.startRowIndex).toBe(0);
+    expect(result.categories[1]?.startRowIndex).toBe(1); // Brand has 1 row of 10
+  });
+});
+
+// --- buildUnifiedSearchRows ---
+
+const nativeEmojis: EmojiDataEmoji[] = [
+  {
+    emoji: "🙂",
+    category: 0,
+    version: 1,
+    label: "Slightly smiling face",
+    tags: ["face", "smile"],
+    countryFlag: undefined,
+    skins: undefined,
+  },
+  {
+    emoji: "👋",
+    category: 1,
+    version: 0.6,
+    label: "Waving hand",
+    tags: ["hello", "hi", "wave"],
+    countryFlag: undefined,
+    skins: {
+      light: "👋🏻",
+      "medium-light": "👋🏼",
+      medium: "👋🏽",
+      "medium-dark": "👋🏾",
+      dark: "👋🏿",
+    },
+  },
+];
+
+describe("buildUnifiedSearchRows", () => {
+  it("should merge native and custom emojis into a single category", () => {
+    const result = buildUnifiedSearchRows(
+      nativeEmojis, customCategories, "glue", 10, 0, 0, undefined, "Results"
+    );
+
+    expect(result.category.label).toBe("Results");
+    expect(result.count).toBe(2); // "Glue logo" and "Glue icon"
+    expect(result.rows[0]?.emojis.every((e) => e.id !== undefined)).toBe(true);
+  });
+
+  it("should return native and custom results together when both match", () => {
+    const result = buildUnifiedSearchRows(
+      nativeEmojis, customCategories, "face", 10, 0, 0, undefined, ""
+    );
+    const emojis = result.rows.flatMap((r) => r.emojis);
+
+    // "Slightly smiling face" matches natively; no custom match for "face"
+    expect(result.count).toBe(1);
+    expect(emojis[0]?.emoji).toBe("🙂");
+  });
+
+  it("should rank by score across both native and custom emojis", () => {
+    // "smile" matches native tag (+1) and no custom emoji
+    // Add a custom emoji with "smile" in label for a higher score
+    const custom: CustomCategory[] = [
+      {
+        id: "test",
+        label: "Test",
+        emojis: [{ id: "smile-custom", label: "smile", url: "/s.png", tags: [] }],
+      },
+    ];
+    const result = buildUnifiedSearchRows(
+      nativeEmojis, custom, "smile", 10, 0, 0, undefined, ""
+    );
+    const emojis = result.rows.flatMap((r) => r.emojis);
+
+    // custom label match = 10, native tag match = 1 — custom should be first
+    expect(emojis[0]?.id).toBe("smile-custom");
+  });
+
+  it("should apply skin tone to native emojis", () => {
+    const result = buildUnifiedSearchRows(
+      nativeEmojis, customCategories, "wave", 10, 0, 0, "dark", ""
+    );
+    const emojis = result.rows.flatMap((r) => r.emojis);
+
+    expect(emojis[0]?.emoji).toBe("👋🏿");
+  });
+
+  it("should return empty results when nothing matches", () => {
+    const result = buildUnifiedSearchRows(
+      nativeEmojis, customCategories, "zzznomatch", 10, 0, 0, undefined, ""
+    );
+
+    expect(result.count).toBe(0);
+    expect(result.rows).toHaveLength(0);
+  });
+});
