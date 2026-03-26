@@ -29,6 +29,10 @@ Minimal changes to upstream files. Each is a small, targeted insertion.
 - When `search` is non-empty and both `custom` and `unifiedSearch` are truthy, delegates immediately to `buildUnifiedSearchRows()` and early-returns a single flat category (unified ranking across native and custom emojis); `searchLabel` sets the category header (defaults to `""`)
 - Otherwise: two delegation call sites — one for frequently used rows (before the native emoji loop), one for custom category rows (after it). All logic lives in `custom-emoji.ts`.
 
+### `src/store.ts`
+
+- `sameEmojiPickerEmoji`: updated to compare by `id` when both sides have one, falling back to `emoji` string. Without this, `useActiveEmoji()` always returns `undefined` for custom emojis because `undefined === undefined` suppresses selector updates. Mirrors `isSameEmoji` in `emoji-identity.ts`.
+
 ### `src/components/emoji-picker.tsx`
 
 - `EmojiPickerRoot` and `EmojiPickerDataHandler`: prop type changed to `EmojiPickerRootProps & CustomEmojiRootProps`; props forwarded to `getEmojiPickerData()`
@@ -53,12 +57,15 @@ To strip the custom emoji feature entirely:
    - Remove the `custom`, `frequently`, `frequentlyLabel`, `unifiedSearch`, `searchLabel` params from `getEmojiPickerData()`
    - Remove the unified search early-return branch and the two delegation call sites, and their imports
 
-4. **Revert `src/components/emoji-picker.tsx`:**
+4. **Revert `src/store.ts`:**
+   - Restore `sameEmojiPickerEmoji` to `return a?.emoji === b?.emoji`
+
+5. **Revert `src/components/emoji-picker.tsx`:**
    - Remove `CustomEmojiRootProps` import and type intersections; restore `EmojiPickerRootProps` alone
    - Remove `isSameEmoji` import; restore `isActive` to `$activeEmoji(state)?.emoji === emoji.emoji`
    - Remove destructuring and forwarding of `custom`, `frequently`, `frequentlyLabel`, `unifiedSearch`, `searchLabel`
 
-5. **Revert `src/index.ts`:**
+6. **Revert `src/index.ts`:**
    - Remove `CustomEmoji`, `CustomCategory` exports
    - Restore `EmojiPickerRootProps` to export directly from `./types`
 
