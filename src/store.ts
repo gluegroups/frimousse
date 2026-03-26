@@ -357,8 +357,9 @@ export function sameEmojiPickerEmoji(
   // Mirrors isSameEmoji (src/utils/emoji-identity.ts) — compare by id for
   // custom emojis, fall back to emoji string for native emojis.
   // If either logic changes, update the other to match.
-  if (a?.id !== undefined && b?.id !== undefined) return a.id === b.id;
-  return a?.emoji === b?.emoji;
+  if (!a || !b) return a === b;
+  if (a.id !== undefined && b.id !== undefined) return a.id === b.id;
+  return a.emoji === b.emoji;
 }
 
 export function sameEmojiPickerRow(
