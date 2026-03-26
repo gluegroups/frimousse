@@ -64,6 +64,24 @@ Custom emojis are searchable using the same scoring as standard emojis:
 
 Results are sorted by score descending and filtered when using `<EmojiPicker.Search>`.
 
+### Unified Search
+
+By default, search results are displayed within their original categories (standard Unicode categories and custom categories separately). Enable `unifiedSearch` to merge all results — native and custom — into a single ranked list sorted by relevance score:
+
+```tsx
+<EmojiPicker.Root
+  custom={customCategories}
+  unifiedSearch
+  searchLabel="Results"
+  onEmojiSelect={handleSelect}
+>
+  {/* ... */}
+</EmojiPicker.Root>
+```
+
+- **`unifiedSearch`** (`boolean`, default `false`): When `true`, all search results are combined into one category ranked by score. Has no effect when there is no active search query.
+- **`searchLabel`** (`string`, optional): Label for the unified results category header. Defaults to `""` if omitted.
+
 ## `onEmojiSelect` Handling
 
 The `emoji` object passed to `onEmojiSelect` differs for custom vs standard emojis:
@@ -96,3 +114,51 @@ Pass an array of `EmojiPickerEmoji` objects via the `frequently` prop to display
 ```
 
 The consumer is responsible for tracking and persisting frequency data — frimousse does not manage localStorage or usage counts internally.
+
+## `scoreEmoji` Utility
+
+The scoring function used internally to rank search results is exported for consumer use:
+
+```ts
+import { scoreEmoji } from "@gluegroups/frimousse";
+
+const score = scoreEmoji("Ship It", ["ship", "deploy"], "ship");
+// Returns 11 (10 for label match + 1 for tag match)
+```
+
+```ts
+function scoreEmoji(label: string, tags: string[], searchText: string): number
+```
+
+Useful if you want to rank or filter custom emojis outside of the picker (e.g., in a custom search UI or for pre-sorting).
+
+## Prop Reference
+
+All custom emoji props are added to `<EmojiPicker.Root>`:
+
+| Prop              | Type                  | Default             | Description |
+| ----------------- | --------------------- | ------------------- | ----------- |
+| `custom`          | `CustomCategory[]`    | —                   | Custom image-based emoji categories, appended after standard categories. |
+| `frequently`      | `EmojiPickerEmoji[]`  | —                   | Emojis to show in a "Frequently Used" category at the top. Hidden during search. |
+| `frequentlyLabel` | `string`              | `"Frequently Used"` | Label for the frequently used category header. |
+| `unifiedSearch`   | `boolean`             | `false`             | When `true`, merges all search results into one ranked list. |
+| `searchLabel`     | `string`              | `""`                | Category header label when `unifiedSearch` is active. |
+
+## Types
+
+```ts
+type CustomEmoji = {
+  id: string;
+  label: string;
+  url: string;
+  tags?: string[];
+};
+
+type CustomCategory = {
+  id: string;
+  label: string;
+  emojis: CustomEmoji[];
+};
+```
+
+Both are exported from `@gluegroups/frimousse`.
