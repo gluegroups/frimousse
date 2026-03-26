@@ -115,23 +115,6 @@ Pass an array of `EmojiPickerEmoji` objects via the `frequently` prop to display
 
 The consumer is responsible for tracking and persisting frequency data — frimousse does not manage localStorage or usage counts internally.
 
-## `scoreEmoji` Utility
-
-The scoring function used internally to rank search results is exported for consumer use:
-
-```ts
-import { scoreEmoji } from "@gluegroups/frimousse";
-
-const score = scoreEmoji("Ship It", ["ship", "deploy"], "ship");
-// Returns 11 (10 for label match + 1 for tag match)
-```
-
-```ts
-function scoreEmoji(label: string, tags: string[], searchText: string): number
-```
-
-Useful if you want to rank or filter custom emojis outside of the picker (e.g., in a custom search UI or for pre-sorting).
-
 ## Prop Reference
 
 All custom emoji props are added to `<EmojiPicker.Root>`:
