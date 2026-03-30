@@ -1,4 +1,5 @@
 import type { CustomCategory } from "../custom-emoji-types";
+import { getShortcodesForEmoji } from "./shortcodes";
 import type {
   EmojiDataEmoji,
   EmojiPickerDataCategory,
@@ -43,9 +44,9 @@ export function buildFrequentlyUsedRows(
   };
 }
 
-// Mirrors the scoring algorithm in the upstream searchEmojis() (src/data/emoji-picker.ts).
-// If that function's scoring logic changes, update scoreEmoji() to match.
-function scoreEmoji(label: string, tags: string[], searchText: string): number {
+// Mirrors the scoring algorithm in the upstream searchEmojis() (src/data/emoji-picker.ts),
+// extended with shortcode scoring. If that function's scoring logic changes, update this to match.
+function scoreEmoji(label: string, tags: string[], shortcodes: string[], searchText: string): number {
   let score = 0;
 
   if (label.toLowerCase().includes(searchText)) {
@@ -55,6 +56,12 @@ function scoreEmoji(label: string, tags: string[], searchText: string): number {
   for (const tag of tags) {
     if (tag.toLowerCase().includes(searchText)) {
       score += 1;
+    }
+  }
+
+  for (const shortcode of shortcodes) {
+    if (shortcode.toLowerCase().replace(/[-_]/g, " ").includes(searchText)) {
+      score += 10;
     }
   }
 
@@ -68,7 +75,7 @@ function searchCustomEmojis(
   const scores = new Map<string, number>();
 
   const filtered = emojis.filter((ce) => {
-    const score = scoreEmoji(ce.label, ce.tags ?? [], searchText);
+    const score = scoreEmoji(ce.label, ce.tags ?? [], [ce.id], searchText);
 
     if (score > 0) {
       scores.set(ce.id, score);
@@ -92,7 +99,7 @@ export function buildCustomCategoryRows(
 ): BuiltCategoryRows {
   const rows: EmojiPickerDataRow[] = [];
   const categories: EmojiPickerDataCategory[] = [];
-  const searchText = search.toLowerCase().trim();
+  const searchText = search.toLowerCase().trim().replace(/_/g, " ");
   let categoryIndex = startingCategoryIndex;
   let startRowIndex = startingRowIndex;
   let count = 0;
@@ -143,13 +150,13 @@ export function buildUnifiedSearchRows(
   skinTone: SkinTone | undefined,
   searchLabel: string,
 ): BuiltRows {
-  const searchText = search.toLowerCase().trim();
+  const searchText = search.toLowerCase().trim().replace(/_/g, " ");
 
   type ScoredEmoji = { emoji: EmojiPickerEmoji; score: number };
   const scored: ScoredEmoji[] = [];
 
   for (const e of nativeEmojis) {
-    const score = scoreEmoji(e.label, e.tags, searchText);
+    const score = scoreEmoji(e.label, e.tags, getShortcodesForEmoji(e.emoji), searchText);
 
     if (score > 0) {
       scored.push({
@@ -167,7 +174,7 @@ export function buildUnifiedSearchRows(
 
   for (const customCategory of custom) {
     for (const ce of customCategory.emojis) {
-      const score = scoreEmoji(ce.label, ce.tags ?? [], searchText);
+      const score = scoreEmoji(ce.label, ce.tags ?? [], [ce.id], searchText);
 
       if (score > 0) {
         scored.push({
