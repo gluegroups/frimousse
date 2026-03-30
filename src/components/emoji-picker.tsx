@@ -21,6 +21,7 @@ import { EMOJI_FONT_FAMILY } from "../constants";
 import type { CustomEmojiRootProps } from "../custom-emoji-types";
 import { getEmojiData, validateLocale, validateSkinTone } from "../data/emoji";
 import { getEmojiPickerData } from "../data/emoji-picker";
+import { loadShortcodes } from "../data/shortcodes";
 import { useActiveEmoji, useSkinTone } from "../hooks";
 import {
   $activeEmoji,
@@ -87,6 +88,8 @@ function EmojiPickerDataHandler({
   useEffect(() => {
     const controller = new AbortController();
     const signal = controller.signal;
+
+    loadShortcodes(emojibaseUrl, emojiVersion).catch(() => {});
 
     getEmojiData({ locale, emojiVersion, emojibaseUrl, signal })
       .then((data) => {
