@@ -144,4 +144,4 @@ type CustomCategory = {
 };
 ```
 
-Both are exported from `@gluegroups/frimousse`.
+Both are exported from `frimousse`.
