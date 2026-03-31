@@ -1,37 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { CustomCategory } from "../../custom-emoji-types";
 import type { EmojiDataEmoji } from "../../types";
 import {
   buildCustomCategoryRows,
   buildFrequentlyUsedRows,
   buildUnifiedSearchRows,
-  scoreEmoji,
 } from "../custom-emoji";
 
-// --- scoreEmoji ---
-
-describe("scoreEmoji", () => {
-  it("should return 0 when there is no match", () => {
-    expect(scoreEmoji("grinning face", ["happy", "smile"], "cat")).toBe(0);
-  });
-
-  it("should score a label match as 10", () => {
-    expect(scoreEmoji("grinning face", [], "grinning")).toBe(10);
-  });
-
-  it("should score each matching tag as 1", () => {
-    expect(scoreEmoji("face", ["happy", "smile", "happy-go-lucky"], "happy")).toBe(2);
-  });
-
-  it("should combine label and tag scores", () => {
-    expect(scoreEmoji("happy face", ["happy", "smile"], "happy")).toBe(11);
-  });
-
-  it("should be case-insensitive", () => {
-    expect(scoreEmoji("Grinning Face", ["Happy"], "grinning")).toBe(10);
-    expect(scoreEmoji("face", ["SMILE"], "smile")).toBe(1);
-  });
-});
+vi.mock("../shortcodes", () => ({
+  getShortcodesForEmoji: (emoji: string) => {
+    // ✅ (U+2705, with or without variation selector U+FE0F)
+    if (emoji === "✅️" || emoji === "✅") {
+      return ["check_mark_button", "white_check_mark"];
+    }
+    return [];
+  },
+}));
 
 // --- shared fixtures ---
 
@@ -151,6 +135,31 @@ describe("buildCustomCategoryRows", () => {
     expect(result.rows).toHaveLength(0);
   });
 
+  it("should normalize underscores to spaces in the search query", () => {
+    // "thumbs_up" should match "Thumbs up" label
+    const result = buildCustomCategoryRows(customCategories, "thumbs_up", 10, 0, 0);
+
+    expect(result.count).toBe(1);
+    expect(result.rows[0]?.emojis[0]?.id).toBe("thumbs-up");
+  });
+
+  it("should match emojis by id (shortcode) when the label does not match", () => {
+    const categories: CustomCategory[] = [
+      {
+        id: "custom",
+        label: "Custom",
+        emojis: [
+          { id: "white-check-mark", label: "Done", url: "/done.png", tags: [] },
+        ],
+      },
+    ];
+    // label "Done" won't match "white check mark", but id "white-check-mark" will
+    const result = buildCustomCategoryRows(categories, "white_check_mark", 10, 0, 0);
+
+    expect(result.count).toBe(1);
+    expect(result.rows[0]?.emojis[0]?.id).toBe("white-check-mark");
+  });
+
   it("should set correct startRowIndex offsets across categories", () => {
     const result = buildCustomCategoryRows(customCategories, "", 10, 0, 0);
 
@@ -185,6 +194,15 @@ const nativeEmojis: EmojiDataEmoji[] = [
       "medium-dark": "👋🏾",
       dark: "👋🏿",
     },
+  },
+  {
+    emoji: "✅️",
+    category: 8,
+    version: 0.6,
+    label: "Check mark button",
+    tags: ["check", "mark"],
+    countryFlag: undefined,
+    skins: undefined,
   },
 ];
 
@@ -245,5 +263,48 @@ describe("buildUnifiedSearchRows", () => {
 
     expect(result.count).toBe(0);
     expect(result.rows).toHaveLength(0);
+  });
+
+  it("should normalize underscores to spaces in the search query", () => {
+    // "waving_hand" should match native emoji with label "Waving hand"
+    const result = buildUnifiedSearchRows(
+      nativeEmojis, customCategories, "waving_hand", 10, 0, 0, undefined, ""
+    );
+    const emojis = result.rows.flatMap((r) => r.emojis);
+
+    expect(result.count).toBe(1);
+    expect(emojis[0]?.emoji).toBe("👋");
+  });
+
+  it("should match native emojis by shortcode when the label does not match", () => {
+    // "white_check_mark" → "white check mark": label "Check mark button" doesn't contain it,
+    // but the mocked shortcodes for ✅️ include "white_check_mark"
+    const result = buildUnifiedSearchRows(
+      nativeEmojis, [], "white_check_mark", 10, 0, 0, undefined, ""
+    );
+    const emojis = result.rows.flatMap((r) => r.emojis);
+
+    expect(result.count).toBe(1);
+    expect(emojis[0]?.emoji).toBe("✅️");
+  });
+
+  it("should match custom emojis by id (shortcode) when the label does not match", () => {
+    const custom: CustomCategory[] = [
+      {
+        id: "custom",
+        label: "Custom",
+        emojis: [
+          { id: "white-check-mark", label: "Done", url: "/done.png", tags: [] },
+        ],
+      },
+    ];
+    // label "Done" won't match "white check mark", but id "white-check-mark" will
+    const result = buildUnifiedSearchRows(
+      [], custom, "white_check_mark", 10, 0, 0, undefined, ""
+    );
+    const emojis = result.rows.flatMap((r) => r.emojis);
+
+    expect(result.count).toBe(1);
+    expect(emojis[0]?.id).toBe("white-check-mark");
   });
 });
